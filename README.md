@@ -29,4 +29,4 @@ To use:
 
 4. Open a browser and browse to the location where you placed download from Step 1.
 
-5. That's it. The page should automatically update every 7.5 seconds by default without refresh to show you the current status of your builds, AWS Beanstalk Applications or AWS Services.
+5. That's it. The page should automatically update every few seconds depending on the setting in config.php by default without refresh to show you the current status of your builds, AWS Beanstalk Applications or AWS Services.
