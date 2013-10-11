@@ -14,6 +14,7 @@ $action 			= $_GET["action"];
 $projectName 		= $_GET["projectName"];
 $bambooProjectKey 	= $_GET["bambooProjectKey"];
 $bambooShortKey 	= $_GET["bambooShortKey"];
+$bambooServer 		= $_GET["bambooServer"];
 
 
 
@@ -21,15 +22,13 @@ $bamboo = new bamboo();
 
 
 switch ($action) {
-    case "getBambooBuilds":
-        $bamboo->getBambooBuilds($projectName,$bambooProjectKey,$bambooShortKey);
+	case "getBambooBuilds":
+        $bamboo->getBambooBuilds($projectName,$bambooProjectKey,$bambooShortKey, $bambooServer);
         break;
 	case "getBambooBuildResults":
-		$bamboo->getBambooBuildResults($projectName,$bambooProjectKey,$bambooShortKey);
+		$bamboo->getBambooBuildResults($projectName,$bambooProjectKey,$bambooShortKey, $bambooServer);
 		break;
-	case "getBambooProjects":
-		$bamboo->getBambooProjects();
-		break;
+
 } 
 
  
@@ -38,45 +37,38 @@ class bamboo{
 		$this->config = include_once("../config.php");
 	}
 	
-	
-	public function getBambooProjects(){
-		$arr = $this->config["bamboo"]["project"];
-		print json_encode($arr);
-	}	
-	
-	
-	public function getBambooBuilds($projectName, $bambooProjectKey, $bambooShortKey){	
+	public function getBambooBuilds($projectName, $bambooProjectKey, $bambooShortKey, $bambooServer){	
 		$content = file_get_contents(
-			$this->config["bamboo"]["bambooProtocol"].
-			$this->config["bamboo"]["bambooHost"].
-			'/rest/api/1.0/plan/'.
-			$bambooProjectKey.
-			'/'.
-			$bambooShortKey.
-			'/'.
-			'.json?os_authType=basic&os_username='.
-			$this->config["bamboo"]["bambooUsername"].			
-			'&os_password='.
-			$this->config["bamboo"]["bambooPassword"]		
+		$this->config["ciBuildServers"]["bamboo"]["servers"][$bambooServer]["bambooProtocol"].
+		$this->config["ciBuildServers"]["bamboo"]["servers"][$bambooServer]["bambooHost"].
+		'/rest/api/1.0/plan/'.
+		$bambooProjectKey.
+		'/'.
+		$bambooShortKey.
+		'/'.
+		'.json?os_authType=basic&os_username='.
+		$this->config["ciBuildServers"]["bamboo"]["servers"][$bambooServer]["bambooUsername"].	
+		'&os_password='.
+		$this->config["ciBuildServers"]["bamboo"]["servers"][$bambooServer]["bambooPassword"]	
 		);
 		
 		print $content;
 		
 	}
 	
-	public function getBambooBuildResults($projectName, $bambooProjectKey, $bambooShortKey){	
+	public function getBambooBuildResults($projectName, $bambooProjectKey, $bambooShortKey, $bambooServer){	
 		$content = file_get_contents(
-			$this->config["bamboo"]["bambooProtocol"].
-			$this->config["bamboo"]["bambooHost"].
+			$this->config["ciBuildServers"]["bamboo"]["servers"][$bambooServer]["bambooProtocol"].
+			$this->config["ciBuildServers"]["bamboo"]["servers"][$bambooServer]["bambooHost"].
 			'/rest/api/1.0/result/'.
 			$bambooProjectKey.
 			'-'.
 			$bambooShortKey.
 			'/'.
 			'.json?os_authType=basic&os_username='.
-			$this->config["bamboo"]["bambooUsername"].			
+			$this->config["ciBuildServers"]["bamboo"]["servers"][$bambooServer]["bambooUsername"].			
 			'&os_password='.
-			$this->config["bamboo"]["bambooPassword"]		
+			$this->config["ciBuildServers"]["bamboo"]["servers"][$bambooServer]["bambooPassword"]		
 		);
 		
 		print $content;

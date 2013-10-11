@@ -1,48 +1,42 @@
-
 /*
- * Global Configs and trigger
+ * Start Intial Load
  */
 
 
 
-
 $(function(){
-	createBambooProjects();
-	createJenkinsProjects();
-	
-	getAwsServices();
-	startRefresh();
-	
+
+findProjects();
+getAwsServices();
+startRefresh();	
+
+
 });
 
 
 function startRefresh() {
     setTimeout(function(){
     	startRefresh();
-		findAwsBuilds();
-		getJenkinsBuilds();
 		getServiceStatus();
+		getBuildStatusUpdates();
 	}, refreshRate);
     
 }
 
 
-/*******************************
- *
- * CI functions
- * 
- * 
- ******************************/
+/*
+ * CI Build Projects Rendering
+ */
 
-var queryParams = "?os_authType=basic&os_username="+bambooUsername+"&os_password="+bambooPassword;
 
-function createBambooProjects(){
+function findProjects(){
+	
 	$.ajax({
-        url: 'includes/bamboo.php?action=getBambooProjects',
+        url: 'includes/getBuilds.php?action=getBuilds',
         dataType: "json",
         success: function(response){
 			$.each(response, function( index, value ) {
-			  createBambooProject(index, value);
+		  		getProjects(index, value);
 			});
         },
 
@@ -50,106 +44,68 @@ function createBambooProjects(){
 	        console.log(request);
 	    },
 	    complete: function(){   	
-	    	findAwsBuilds();
-	    	
+			getBuildStatusUpdates();
 	    }
-    });
-}
-	
-
-function createJenkinsProjects(){
-	$.ajax({
-        url: 'includes/jenkins.php?action=getjenkinsProjects',
-        dataType: "json",
-        success: function(response){
-			$.each(response, function(project, value) {
-			  createJenkinsProject(project, value, response);
-			});
-        },
-
-	    error: function (request, textStatus, errorThrown) {
-	        console.log(request);
-	    },
-	    complete: function(){   	
-	    	findAwsBuilds();
-	    	getJenkinsBuilds();
-	    	
-	    }
-	    
-    });
+    }); 
 }
 
-function createBambooProject(project, value){
-
-	pk = value.bambooProjectKey;
-	sk = value.bambooShortKey;
-	awsProject = value.awsApplicationName;
-
-	columns = $(document.createElement("div")).addClass('large-6 columns anchorWrapper');
-	anchor = $(document.createElement("a")).attr('href','');
-	project = $(document.createElement("div")).addClass('project fade').attr('id',project).attr('data-bambooProjectKey',pk).attr('data-bambooShortKey',sk).attr('data-aws-project', awsProject);
-	projectTitle = project.attr('id');
-	projectName = $(document.createElement("div")).addClass('large-10 columns').text(projectTitle);
-	projectStatus = $(document.createElement("div")).addClass('large-2 columns options');
-	
-	project.append(projectName);
-	project.append(projectStatus);
-	columns.append(anchor);
-	columns.append(project);
-	$('#bambooProjects .row').append(columns);
-	
+function getProjects(serverType, response){
+	$.each(response, function(index, serverName){
+		$.each(serverName, function(serverNameIndex, server){
+			renderProjects(server, serverType, serverNameIndex);
+		});
+	});
 }
 
-function createJenkinsProject(job, value, response){
+
+function renderProjects(response, serverType, serverNameIndex){
 	
-	server = job;
-	job = value.job;
+	//Check if Jenkins or Bamboo
+	build = response.job ? response.job : response.project;
 	
-	$.each(job, function(key, val) {
-		jobKey = val.jobKey;
-		awsProject = val.awsApplicationName;
+	
+	//Then render each card and assign data
+	$.each(build, function(buildName, buildValue){	
+		buildName = buildValue.jobKey ? buildValue.jobKey : buildName;
 		
 		columns = $(document.createElement("div")).addClass('large-6 columns anchorWrapper');
 		anchor = $(document.createElement("a")).attr('href','');
-		job = $(document.createElement("div")).addClass('project fade jenkins').attr('id',jobKey).attr('data-jenkins-server',server).attr('data-aws-project', awsProject);
-		jobTitle = job.attr('id');
-		jobName = $(document.createElement("div")).addClass('large-10 columns').text(jobTitle);
-		jobStatus = $(document.createElement("div")).addClass('large-2 columns options');
+		project = $(document.createElement("div")).addClass('project fade').attr('id',buildName).attr('data-server', serverType).attr('data-servername', serverNameIndex);
+		projectTitle = project.attr('id');
+		projectName = $(document.createElement("div")).addClass('large-10 columns').text(buildName);
+		projectStatus = $(document.createElement("div")).addClass('large-2 columns options');
+			
+		$.each(buildValue, function(index, value){
+			project.attr('data-'+index, value);
+			
+		});
 		
-		job.append(jobName);
-		job.append(jobStatus);
+		project.append(projectName);
+		project.append(projectStatus);
 		columns.append(anchor);
-		columns.append(job);
+		columns.append(project);
 		$('#bambooProjects .row').append(columns);
+		
 	});
 }
 
-
-function getBambooBuilds(){
+/*
+ * CI Build Projects Status Updates
+ */
+	function getBuildStatusUpdates(){
 	$('.project').each(function() {
-	  projectName = $( this ).attr('id');
-	  bambooProjectKey = $( this ).attr('data-bambooprojectkey');
-	  bambooShortKey = $( this ).attr('data-bambooShortKey');
-	  if(bambooProjectKey){
-	  	projectName != undefined ? getCurrentStatus(projectName, bambooProjectKey, bambooShortKey) : '';
-	  }
-	});
-}
-
-function getJenkinsBuilds(){
-	$('.project.jenkins').each(function() {
-	  jobName = $( this ).attr('id');
-	  serverName = $(this).attr('data-jenkins-server');
-	  if(jobName.length){
-	  	jobName != undefined ? getCurrentJenkinsStatus(jobName, serverName) : '';
-	  }
-	});
-}
-
-function findAwsBuilds(){
-	$('.project').each(function() {
-	  awsProject = $( this ).attr('data-aws-project');	  
-	  awsProject != undefined ? getAwsBuilding(awsProject) : '';
+		project = $(this).data();
+		//console.log(project)
+		
+		
+		if(project.awsapplicationname){
+			getAwsBuilding(project.awsapplicationname);
+		}else if(project.server === 'bamboo'){
+			
+		}else if(project.server === 'jenkins'){
+			getJenkinsStatus(project.jobkey, project.servername);
+		}
+		
 	});
 }
 
@@ -161,7 +117,6 @@ function getAwsBuilding(awsProject){
 			showAwsStatus(response);
 			
         },
-
 	    error: function (request, textStatus, errorThrown) {
 	        console.log(request);
 	    }
@@ -169,46 +124,70 @@ function getAwsBuilding(awsProject){
 }
 
 function showAwsStatus(response){
-
 	app = response.Environments[0];
 
-	var appCard = $('[data-aws-project="'+app.ApplicationName+'"]');
+	var appCard = $('[data-awsapplicationname="'+app.ApplicationName+'"]');
 	if(app.Health === 'Gray' || app.Health === 'Grey'){
-		if(!appCard.hasClass('updating')){			
-			var awsCard = $('[data-aws-project="'+app.ApplicationName+'"] .large-2');	
-			appCard.find('.options div, .options i').remove();
-			uploading = $(document.createElement("i")).addClass('icon-cloud-upload right animated fadeInUp');
-			appCard.removeClass().addClass('project fade updating')
-			awsCard.append(uploading);
-		}
+		 if(!appCard.hasClass('updating')){			
+			 var awsCard = $('[data-awsapplicationname="'+app.ApplicationName+'"] .large-2');	
+			 appCard.find('.options div, .options i').remove();
+			 uploading = $(document.createElement("i")).addClass('icon-cloud-upload right animated fadeInUp');
+			 appCard.removeClass().addClass('project fade updating')
+			 awsCard.append(uploading);
+		 }
 	}else if(app.Health === 'Red'){
 		appCard.removeClass().addClass('project fade failed');
 	}else if(app.Health === 'Yellow'){
 		appCard.removeClass().addClass('project fade info');
 	}else if(app.Health === 'Green'){
-		//appCard.find('.options div').remove();
+		appCard.find('.options div').remove();
 		appCard.find('.options i.icon-cloud-upload').remove();
 		appCard.removeClass('updating');
-		getBambooBuilds();
-		getJenkinsBuilds();
-	}else if(appCard.hasClass('jenkins')){
-		getJenkinsBuilds();
+		//If AWS BeanStalk is OK, move to build status
+		if(appCard.data('server') === 'jenkins'){			
+			getJenkinsStatus(appCard[0].id,appCard.data('servername'))
+		}else if (appCard.data('server') === 'bamboo'){
+			getCurrentStatus(appCard[0].id, appCard.data('bambooprojectkey'), appCard.data('bambooshortkey'),appCard.data('servername'));
+		}
+	
 	}
-	
-	
+		
 //Find colors here: http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.healthstatus.html
 }
 
-
-
-function getCurrentStatus(projectName, bambooProjectKey, bambooShortKey){
+function getCurrentStatus(projectName, bambooProjectKey, bambooShortKey, bambooServer){
 
     $.ajax({
-        url: 'includes/bamboo.php?action=getBambooBuilds&projectName='+projectName+'&bambooProjectKey='+ bambooProjectKey +'&bambooShortKey='+ bambooShortKey,
+        url: 'includes/bamboo.php?action=getBambooBuilds&projectName='+projectName+'&bambooProjectKey='+ bambooProjectKey +'&bambooShortKey='+ bambooShortKey+'&bambooServer='+bambooServer,
         dataType: "json",
         success: function(response){
-			buildStatus(response);
-			//createLink(response);
+        	if(response.isBuilding){
+        		var shortKeyRow = $("[data-bambooshortkey='"+response.shortKey+"']");
+				if(!shortKeyRow.hasClass('building') && !shortKeyRow.hasClass('updating')){
+				
+					buildingLoader = $(document.createElement("div")).addClass('right buildingIcon');
+					shortKeyRow.addClass('building fade');
+					$("[data-bambooshortkey='"+response.shortKey+"'] .options").append(buildingLoader);
+				}	
+        	}else{
+				getBambooStatus(projectName, bambooProjectKey, bambooShortKey, bambooServer);
+			}
+        },
+
+	    error: function (request, textStatus, errorThrown) {
+	        console.log(request);
+	    }
+    });
+
+}
+
+function getBambooStatus(projectName, bambooProjectKey, bambooShortKey, bambooServer){
+
+    $.ajax({
+        url: 'includes/bamboo.php?action=getBambooBuildResults&projectName='+projectName+'&bambooProjectKey='+ bambooProjectKey +'&bambooShortKey='+ bambooShortKey+'&bambooServer='+bambooServer,
+        dataType: "json",
+        success: function(response){
+			renderBambooBuildResults(response, bambooProjectKey, bambooShortKey);			
         },
 
 	    error: function (request, textStatus, errorThrown) {
@@ -219,58 +198,7 @@ function getCurrentStatus(projectName, bambooProjectKey, bambooShortKey){
 }
 
 
-function getCurrentJenkinsStatus(jobName, serverName){
-
-    $.ajax({
-        url: 'includes/jenkins.php?action=getCurrentJenkinsStatus&jobName='+jobName+'&serverName='+serverName,
-        dataType: "json",
-        success: function(response){
-			showJenkinsBuildResults(response);
-        },
-
-	    error: function (request, textStatus, errorThrown) {
-	        console.log(request);
-	    }
-    });
-
-}
-
-function buildStatus(response){
-	response.isBuilding === true ? changeStatusBuilding(response) : getBambooBuildResults(response);
-}
-
-function changeStatusBuilding(response){
-	var shortKeyRow = $("[data-bambooshortkey='"+response.shortKey+"']");
-	if(!shortKeyRow.hasClass('building') && !shortKeyRow.hasClass('updating')){
-	
-		buildingLoader = $(document.createElement("div")).addClass('right buildingIcon');
-		shortKeyRow.addClass('building fade');
-		$("[data-bambooshortkey='"+response.shortKey+"'] .options").append(buildingLoader);
-	}	
-	
-}
-
-
-function getBambooBuildResults(response){
-	projectName = response.projectName;
-	bambooProjectKey = response.projectKey;
-	bambooShortKey = response.shortKey;
-	
-	
-    $.ajax({
-        url: 'includes/bamboo.php?action=getBambooBuildResults&projectName='+projectName+'&bambooProjectKey='+ bambooProjectKey +'&bambooShortKey='+ bambooShortKey,
-        dataType: "json",
-        success: function(response){
-			showBambooBuildResults(response, bambooProjectKey, bambooShortKey);
-        },
-
-	    error: function (request, textStatus, errorThrown) {
-	        console.log(request);
-	    }
-    });
-}
-
-function showBambooBuildResults(response, bambooProjectKey, bambooShortKey){
+function renderBambooBuildResults(response, bambooProjectKey, bambooShortKey){
 	if(response.results.result[0]){
 		state = response.results.result[0].state;
 		$('.row').find("[data-bambooshortkey='"+bambooShortKey +"']").removeClass('building updating');
@@ -279,7 +207,6 @@ function showBambooBuildResults(response, bambooProjectKey, bambooShortKey){
 		
 		if(state === 'Failed'){
 			if(!$('.row').find("[data-bambooshortkey='"+bambooShortKey +"']").hasClass('failed')){
-				playAlert();
 			}			
 			$('.row').find("[data-bambooshortkey='"+bambooShortKey +"']").removeClass().addClass('project failed fade');
 		}else if(state === "Successful"){
@@ -287,7 +214,23 @@ function showBambooBuildResults(response, bambooProjectKey, bambooShortKey){
 		}
 	}
 }
-function showJenkinsBuildResults(response){
+
+function getJenkinsStatus(jobName, serverName){
+    $.ajax({
+        url: 'includes/jenkins.php?action=getJenkinsStatus&jobName='+jobName+'&serverName='+serverName,
+        dataType: "json",
+        success: function(response){
+			renderJenkinsBuildResults(response);
+        },
+
+	    error: function (request, textStatus, errorThrown) {
+	        console.log(request);
+	    }
+    });
+
+}
+
+function renderJenkinsBuildResults(response){
 	var jenkinsJobRow = $('.row').find("#"+response.displayName);
 	if(response && !jenkinsJobRow.hasClass('updating')){
 		state = response.color;
@@ -298,10 +241,9 @@ function showJenkinsBuildResults(response){
 		
 		if(state === 'red'){
 			if(!jenkinsJobRow.hasClass('failed')){
-				playAlert();
 			}			
 			jenkinsJobRow.removeClass().addClass('project fade failed');
-		}else if(state === 'blue_anime' || state === "red_anime"){
+		}else if(state.indexOf("anime") >= 0){
 			if(!jenkinsJobRow.hasClass('building')){
 	
 				buildingLoader = $(document.createElement("div")).addClass('right buildingIcon');
@@ -315,6 +257,11 @@ function showJenkinsBuildResults(response){
 		}
 	}
 }
+
+
+
+
+
 
 
 
@@ -401,10 +348,6 @@ function attachServiceStatus(response, serviceName, serviceKey){
 		}else if(state.indexOf("Informational message:") >= 0){
 			serviceRow.removeClass().addClass('service fade info');
 		}else{
-			if(!serviceRow.hasClass('down')){
-				playAlert();
-			}
-			
 			serviceRow.removeClass().addClass('service fade down');
 		}
 	}else{

@@ -17,17 +17,9 @@ $serverName 	= $_GET["serverName"];
 $jenkins = new jenkins();
 
 switch ($action) {
-    case "getjenkinsBuilds":
-        $jenkins->getjenkinsBuilds($jobName);
-        break;
-	case "getjenkinsBuildResults":
-		$jenkins->getjenkinsBuildResults($projectName,$jenkinsProjectKey,$jenkinsShortKey);
-		break;
-	case "getjenkinsProjects":
-		$jenkins->getjenkinsProjects();
-		break;
-	case "getCurrentJenkinsStatus":
-			$jenkins->getCurrentJenkinsStatus($jobName, $serverName);
+
+	case "getJenkinsStatus":
+			$jenkins->getJenkinsStatus($jobName, $serverName);
 		break;
 } 
 
@@ -37,18 +29,11 @@ class jenkins{
 		$this->config = include_once("../config.php");
 	}
 	
-	
-	public function getjenkinsProjects(){
-		$arr = $this->config["jenkins"]["servers"];
-		print json_encode($arr);
-	}	
-	
-	
-	public function getCurrentJenkinsStatus($jobName, $serverName){		
+	public function getJenkinsStatus($jobName, $serverName){		
 		
 		$content = file_get_contents(
-			$this->config["jenkins"]['servers'][$serverName]["jenkinsProtocol"].
-			$this->config["jenkins"]['servers'][$serverName]["jenkinsHost"].
+			$this->config["ciBuildServers"]["jenkins"]['servers'][$serverName]["jenkinsProtocol"].
+			$this->config["ciBuildServers"]["jenkins"]['servers'][$serverName]["jenkinsHost"].
 			'/job/'.
 			$jobName.
 			'/api/json'
@@ -56,28 +41,7 @@ class jenkins{
 		
 		print $content;
 		
-	}
-	
-	public function getjenkinsBuildResults($projectName, $jenkinsProjectKey, $jenkinsShortKey){	
-		$content = file_get_contents(
-			$this->config["jenkins"]["jenkinsProtocol"].
-			$this->config["jenkins"]["jenkinsHost"].
-			'/rest/api/1.0/result/'.
-			$jenkinsProjectKey.
-			'-'.
-			$jenkinsShortKey.
-			'/'.
-			'.json?os_authType=basic&os_username='.
-			$this->config["jenkins"]["jenkinsUsername"].			
-			'&os_password='.
-			$this->config["jenkins"]["jenkinsPassword"]		
-		);
-		
-		print $content;
-		
-	}
-	
-		
+	}		
 		
 }
 

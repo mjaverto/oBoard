@@ -1,19 +1,42 @@
 <?php
 	return array(
-		//Currently only support 1 single Atlassian Bamboo server. Multiple support to follow
-		"bamboo" => array(
-			"bambooProtocol" => "http://", 				// http:// or https://
-			"bambooHost" => "bamboo.example.com:8085", 	// bamboo.example.com:8085
-			"bambooUsername" => "statusboard", 			// a bamboo user
-			"bambooPassword" => "password",				// a bamboo password
-			"project" => array(
-	            "ChannelApe" => array(					//Use any name here you want
-		            "bambooProjectKey" => "KEY",		//Must match Bamboo Project Key
-		            "bambooShortKey" => "TEST",			//Must match exact Bamboo Short Key
-		            "awsApplicationName" => "sample1" 	//refers to AWS application below
-		        )
-	        )
-			
+		"ciBuildServers"=> array(
+			"bamboo" => array(
+				"servers"=> array(
+					"otreva" => array(
+						"bambooProtocol" => "http://", 				// http:// or https://
+						"bambooHost" => "bamboo.example.com:8085", 	// bamboo.example.com:8085
+						"bambooUsername" => "statusboard", 			// a bamboo user
+						"bambooPassword" => "password",				// a bamboo password
+						"project" => array(
+				            "ChannelApe" => array(					//Use any name here you want
+					            "bambooProjectKey" => "KEY",		//Must match Bamboo Project Key
+					            "bambooShortKey" => "TEST",			//Must match exact Bamboo Short Key
+					            "awsApplicationName" => "sample1" 	//refers to AWS application below
+					        )
+				        )
+					)
+				)
+			),
+			"jenkins" => array(
+				"servers"=> array(
+					"yourName" => array(									//Use anything here for Server key name.
+						"jenkinsProtocol" => "http://", 						// http:// or https://
+						"jenkinsHost" => "jenkins.example.com:8080", 			// jenkins.example.com:8080
+						"jenkinsUsername" => "jenkins", 						// a jenkins user
+						"jenkinsPassword" => "password",						// a jenkins password
+							"job" => array(
+								'testjob1'=> array(
+						            "jobKey" => "testjob1Name" // The name you'd see in the URL of Jenkins including %20 if you have spaces
+						        ),
+						        'testjob2'=> array(
+						            "jobKey" => "testjob2",
+						            "awsApplicationName" => "sample2"
+						        )
+					        ),
+						)
+					),	
+				)
 		),
 		"aws" => array(
 			"application" => array(												//Currently only supports AWS ElasticBeanstalk but support for 1 or many applications.
@@ -41,27 +64,8 @@
 			"S3"					=> "s3-us-standard"
 			
 		),
-		"jenkins" => array(
-			"servers"=> array(
-				"wdl" => array(												//Use anything here for Server key name.
-					"jenkinsProtocol" => "http://", 						// http:// or https://
-					"jenkinsHost" => "jenkins.example.com:8080", 			// jenkins.example.com:8080
-					"jenkinsUsername" => "jenkins", 						// a jenkins user
-					"jenkinsPassword" => "password",						// a jenkins password
-						"job" => array(
-							'testjob1'=> array(
-					            "jobKey" => "testjob1Name" // The name you'd see in the URL of Jenkins including %20 if you have spaces
-					        ),
-					        'testjob2'=> array(
-					            "jobKey" => "testjob2",
-					            "awsApplicationName" => "sample2"
-					        )
-				        ),
-					)
-			),	
-		),
 		"statusBoard" => array(
-			"refreshRate" => 7500
+			"refreshRate" => 5000
 		)
 	);
 ?>

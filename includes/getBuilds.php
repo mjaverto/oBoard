@@ -1,8 +1,28 @@
 <?php
 
-include_once('../config.php');
 
-$content = file_get_contents($bambooProtocol.$bambooHost.'/rest/api/1.0/plan/'.$bambooProjectKey.'/'.$bambooShortKey.'/'.'.json?os_authType=basic&os_username='.$bambooUsername.'&os_password='.$bambooPassword);
-echo $content;
+$action 			= $_GET["action"];
 
-?>
+$builds = new builds();
+
+
+switch ($action) {
+    case "getBuilds":
+        $builds->getBuilds();
+        break;
+} 
+
+ 
+class builds{
+	public function __construct(){
+		$this->config = include_once("../config.php");
+	}
+	
+	
+	public function getBuilds(){
+		$arr = $this->config["ciBuildServers"];
+		print json_encode($arr);
+	}	
+
+}
+
