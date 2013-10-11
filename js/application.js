@@ -137,10 +137,14 @@ function showAwsStatus(response){
 		 }
 	}else if(app.Health === 'Red'){
 		appCard.removeClass().addClass('project fade failed');
+		appCard.find('.options div').remove();
+		appCard.find('.options i').remove();
 	}else if(app.Health === 'Yellow'){
 		appCard.removeClass().addClass('project fade info');
-	}else if(app.Health === 'Green'){
 		appCard.find('.options div').remove();
+		appCard.find('.options i').remove();
+	}else if(app.Health === 'Green'){
+		
 		appCard.find('.options i.icon-cloud-upload').remove();
 		appCard.removeClass('updating');
 		//If AWS BeanStalk is OK, move to build status
